@@ -43,7 +43,7 @@ signal.signal(signal.SIGINT, signal_handler)
 ###############################################################
 
 # Create the flashable image
-subprocess.call(["arm-none-eabi-objcopy", "-Obinary", "build/artifacts/release/flash.elf", "build/artifacts/release/flash.bin"])
+subprocess.call(["arm-none-eabi-objcopy", "-Obinary", "build/flash.elf", "build/flash.bin"])
 
 # Flash the image
 tn = telnetlib.Telnet("127.0.0.1", "4444")
@@ -54,7 +54,7 @@ tn.write("reset halt\n")
 tn.read_until("> ")
 tn.write("flash probe 0\n")
 tn.read_until("> ")
-tn.write("flash write_image erase build/artifacts/release/flash.bin 0x08000000\n")
+tn.write("flash write_image erase build/flash.bin 0x08000000\n")
 tn.read_until("> ")
 tn.write("reset\n")
 tn.read_until("> ")
@@ -66,7 +66,7 @@ tn.close()
 ###############################################################
 
 time.sleep(2)
-gdb_proc = subprocess.Popen(["arm-none-eabi-gdb", "-ex", "target remote localhost:3333", "build/artifacts/release/flash.elf", "-ex", "set remote hardware-breakpoint-limit 6", "-ex", "set remote hardware-watchpoint-limit 4"])
+gdb_proc = subprocess.Popen(["arm-none-eabi-gdb", "-ex", "target remote localhost:3333", "build/flash.elf", "-ex", "set remote hardware-breakpoint-limit 6", "-ex", "set remote hardware-watchpoint-limit 4"])
 
 # Spin until GDB is exited
 while gdb_proc.poll() == None:
