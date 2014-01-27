@@ -1,21 +1,16 @@
 ---
 
-# Notes:
-# Sample project C code is not presently written to produce a release artifact.
-# As such, release build options are disabled.
-# This sample, therefore, only demonstrates running a collection of unit tests.
-
 :project:
   :use_exceptions: FALSE
   :use_test_preprocessor: TRUE
   :use_auxiliary_dependencies: TRUE
   :build_root: build
-#  :release_build: TRUE
+  :release_build: TRUE
   :test_file_prefix: test_
 
-#:release_build:
-#  :output: MyApp.out
-#  :use_assembly: FALSE
+:release_build:
+  :output: flash.elf
+  :use_assembly: FALSE
 
 :environment:
 
@@ -57,10 +52,35 @@
     int8:     INT8
     bool:     UINT8
 
-#:tools:
-# Ceedling defaults to using gcc for compiling, linking, etc.
-# As [:tools] is blank, gcc will be used (so long as it's in your system path)
-# See documentation to configure a given toolchain for use
+:tools:
+  :release_compiler:
+    :executable: arm-none-eabi-gcc
+    :name: 'Arm eabi GCC compiler'
+    :arguments:
+      - -Wall
+      - -Werror
+      - -Wextra
+      - -std=c99
+      - -fno-common
+      - -O0
+      - -g
+      - -mthumb
+      - -mcpu=cortex-m4
+      - -mfloat-abi=hard
+      - -mfpu=fpv4-sp-d16
+      - -c ${1}
+      - -o ${2}
+
+  :release_linker:
+    :executable: arm-none-eabi-ld
+    :name: 'Arm eabi GCC linker'
+    :arguments:
+      - ${1}
+      - -Tstm32.ld
+      - -nostartfiles
+      - "#{`echo -n '-L'; which arm-none-eabi-ld | sed s:bin/arm-none-eabi-ld:arm-none-eabi/lib:`}"
+      - -lopencm3_stm32f4
+      - -o ${2}
 
 :plugins:
   :load_paths:
@@ -68,4 +88,5 @@
   :enabled:
     - stdout_pretty_tests_report
     - module_generator
+    - gcov
 ...
