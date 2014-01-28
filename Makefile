@@ -1,22 +1,35 @@
 CC=arm-none-eabi-gcc
-CFLAGS=-Wall -Werror -Wextra -std=c99 -fno-common -ffreestanding -O0 -g -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -DUSE_STDPERIPH_DRIVER
+CFLAGS=-Wall -Wextra -std=c99 -fno-common -ffreestanding -O0 -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -DUSE_STDPERIPH_DRIVER -g
 CFLAGS+=-Isrc -Isrc/CMSIS/Include -Isrc/STM32F4xx -Isrc/STM32F4xx_StdPeriph_Driver/inc
 LD=arm-none-eabi-ld
 LDFLAGS=-Tlightshow.ld -nostartfiles -L/usr/arm-none-eabi/lib
 AS=arm-none-eabi-as
+ASFLAGS=-g
 
 ODIR=build
 LDIR=lib
 SRCS=src
 
-build/STM32F4xx/startup_stm32f40_41xxx.o: 
-	$(AS) src/STM32F4xx/startup_stm32f40_41xxx.s -o $@
+PERIPH_ODIR=STM32F4xx_StdPeriph_Driver
 
-$(ODIR)/%.o: $(SRCS)%.c 
+_OBJS=startup_stm32f40_41xxx.o main.o system_stm32f4xx.o $(PERIPH_ODIR)/stm32f4xx_gpio.o $(PERIPH_ODIR)/stm32f4xx_rcc.o
+OBJS = $(patsubst %,$(ODIR)/%,$(_OBJS))
+
+
+$(ODIR)/startup_stm32f40_41xxx.o: $(SRCS)/STM32F4xx/startup_stm32f40_41xxx.s
+	$(AS) src/STM32F4xx/startup_stm32f40_41xxx.s -o $@ $(ASFLAGS)
+
+$(ODIR)/%.o: $(SRCS)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(ODIR)/$(PERIPH_ODIR)/%.o: $(SRCS)/$(PERIPH_ODIR)/src/%.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+lightshow: $(OBJS)
+	$(LD) $(OBJS) $(LDFLAGS) -o build/flash.elf
 
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o $(ODIR)/STM32F4xx/*.o $(ODIR)/STM32F4xx_StdPeriph_Driver/*.o *~ core $(INCDIR)/*~ 
+	rm -f $(ODIR)/flash.* $(ODIR)/*.o $(ODIR)/STM32F4xx/*.o $(ODIR)/STM32F4xx_StdPeriph_Driver/*.o *~ core $(INCDIR)/*~ 
 
