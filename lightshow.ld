@@ -1,7 +1,7 @@
 /* Entry Point */
 ENTRY(Reset_Handler)
 
-_estack = 0x20030000;
+_estack = 0x20010000;
 
 MEMORY
 {
