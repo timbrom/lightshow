@@ -255,6 +255,11 @@
 /* USB OTG FS, SDIO and RNG Clock =  PLL_VCO / PLLQ */
 #define PLL_Q      7
 
+/* PLLI2S_VCO = (HSE_VALUE Or HSI_VALUE / PLL_M) * PLLI2S_N
+   I2SCLK = PLLI2S_VCO / PLLI2S_R */
+#define PLLI2S_N   192
+#define PLLI2S_R   5
+
 #if defined (STM32F40_41xxx)
 #define PLL_N      336
 /* SYSCLK = PLL_VCO / PLL_P */
@@ -567,6 +572,23 @@ static void SetSysClock(void)
   { /* If HSE fails to start-up, the application will have wrong clock
          configuration. User can add here some code to deal with this error */
   }
+
+  /******************************************************************************/
+  /*                        I2S clock configuration                             */
+  /******************************************************************************/
+  /* PLLI2S clock used as I2S clock source */
+  RCC->CFGR &= ~RCC_CFGR_I2SSRC;
+ 
+   /* Configure PLLI2S */
+   RCC->PLLI2SCFGR = (PLLI2S_N << 6) | (PLLI2S_R << 28);
+ 
+   /* Enable PLLI2S */
+   RCC->CR |= ((uint32_t)RCC_CR_PLLI2SON);
+ 
+   /* Wait till PLLI2S is ready */
+   while((RCC->CR & RCC_CR_PLLI2SRDY) == 0)
+   {
+   }
 
 }
 

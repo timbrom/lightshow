@@ -1,82 +1,61 @@
 /**
-  ******************************************************************************
-  * @file    GPIO/GPIO_IOToggle/main.c 
-  * @author  MCD Application Team
-  * @version V1.3.0
-  * @date    13-November-2013
-  * @brief   Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; COPYRIGHT 2013 STMicroelectronics</center></h2>
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
+ * lightshow entry point
+ */
 
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_conf.h"
+#include "microphone.h"
 
-/** @addtogroup STM32F4xx_StdPeriph_Examples
-  * @{
-  */
-
-/** @addtogroup GPIO_IOToggle
-  * @{
-  */ 
-
-/* Private typedef -----------------------------------------------------------*/
 GPIO_InitTypeDef  GPIO_InitStructure;
+extern volatile uint32_t Num_Ticks;
 
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
-
-/**
-  * @brief  Main program
-  * @param  None
-  * @retval None
-  */
 int main(void)
 {
-  /*!< At this stage the microcontroller clock setting is already configured, 
-       this is done through SystemInit() function which is called from startup
-       files (startup_stm32f40_41xxx.s/startup_stm32f427_437xx.s/startup_stm32f429_439xx.s)
-       before to branch to application main. 
-       To reconfigure the default setting of SystemInit() function, refer to
-       system_stm32f4xx.c file
-     */  
-int i = 0;
-  /* GPIOG Peripheral clock enable */
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOG, ENABLE);
+    int i = 0;
+    uint16_t audio[128];
 
-  /* Configure PG6 and PG8 in output pushpull mode */
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
-  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-  GPIO_Init(GPIOG, &GPIO_InitStructure);
+    /* Set up system tick */
+    RCC_ClocksTypeDef RCC_Clocks;
+  
+    /* SysTick end of count event each 10ms */
+    RCC_GetClocksFreq(&RCC_Clocks);
+    SysTick_Config(RCC_Clocks.HCLK_Frequency / 1680);
 
-  while(1)
-      {
+    /* GPIOA Peripheral clock enable */
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+
+    /* Configure PA7 in output pushpull mode */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    WaveRecorderInit(32000,16, 1);
+    WaveRecorderStart(audio, 128);
+
+    while (1)
+    {
+        /* Set PA7 */
+        GPIOA->BSRRL = GPIO_Pin_7;
+
+        i = Num_Ticks;
+        while((Num_Ticks - i) < 1000);
+        
+        /* Reset PA7 */
+        GPIOA->BSRRH = GPIO_Pin_7;
+
+        i = Num_Ticks;
+        while((Num_Ticks - i) < 1000);
+    }
+
+    while(1)
+    {
       i++;
-      }
+    }
 }
 
 #ifdef  USE_FULL_ASSERT
@@ -90,6 +69,8 @@ int i = 0;
   */
 void assert_failed(uint8_t* file, uint32_t line)
 { 
+    (void)file;
+    line++;
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
 
@@ -99,13 +80,3 @@ void assert_failed(uint8_t* file, uint32_t line)
   }
 }
 #endif
-
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -119,19 +119,6 @@ Infinite_Loop:
   b  Infinite_Loop
   .size  Default_Handler, .-Default_Handler
 
-HardFault_Handler:
-    movs r0, #4
-    movs r1, lr
-    tst r0, r1
-    beq _MSP
-    mrs r0, psp
-    b _HALT
-  _MSP:
-    mrs r0, msp
-  _HALT:
-    ldr r1,[r0,#20]
-    bkpt #0
-
 /******************************************************************************
 *
 * The minimal vector table for a Cortex M3. Note that the proper constructs
@@ -256,6 +243,9 @@ g_pfnVectors:
    .weak      NMI_Handler
    .thumb_set NMI_Handler,Default_Handler
   
+   .weak      HardFault_Handler
+   .thumb_set HardFault_Handler,Default_Handler
+
    .weak      MemManage_Handler
    .thumb_set MemManage_Handler,Default_Handler
   

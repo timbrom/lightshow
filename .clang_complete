@@ -1,0 +1,10 @@
+-Isrc
+-Isrc/CMSIS/Include
+-Isrc/STM32F4xx
+-Isrc/STM32F4xx_StdPeriph_Driver/inc
+-Isrc/STM32F4xx_mic
+-Wall
+-Wextra
+-std=c99
+-fno-common
+-DUSE_STDPERIPH_DRIVER

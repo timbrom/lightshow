@@ -41,11 +41,9 @@ SECTIONS
     {
         . = ALIGN(4);
         _sbss = .;
-        __bss_start__ = .;
         *(.bss)
         . = ALIGN(4);
         _ebss = .;
-        __bss_end__ = .;
     } >ram
 }
 
