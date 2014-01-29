@@ -1,8 +1,8 @@
 CC=arm-none-eabi-gcc
 CFLAGS=-Wall -Wextra -std=c99 -fno-common -O0 -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -DUSE_STDPERIPH_DRIVER -g
-CFLAGS+=-Isrc -Isrc/CMSIS/Include -Isrc/STM32F4xx -Isrc/STM32F4xx_StdPeriph_Driver/inc
-LD=arm-none-eabi-ld
-LDFLAGS=-Tlightshow.ld -nostartfiles -L/usr/arm-none-eabi/lib
+CFLAGS+=-Isrc -Isrc/CMSIS/Include -Isrc/STM32F4xx -Isrc/STM32F4xx_StdPeriph_Driver/inc -Isrc/STM32F4xx_mic
+LD=arm-none-eabi-gcc
+LDFLAGS=-Tlightshow.ld -nostartfiles -L/home/thb/.bin/arm-none-eabi/lib
 AS=arm-none-eabi-as
 ASFLAGS=-g
 
@@ -30,7 +30,7 @@ $(ODIR)/$(PERIPH_ODIR)/%.o: $(SRCS)/$(PERIPH_ODIR)/src/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 lightshow: $(OBJS)
-	$(LD) $(OBJS) $(LDFLAGS) -o build/flash.elf
+	$(LD) $(OBJS) lib/libPDMFilter_CM4F_GCC.a $(LDFLAGS) $(CFLAGS) -o build/flash.elf
 
 .PHONY: clean
 

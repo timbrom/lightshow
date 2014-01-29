@@ -15,6 +15,9 @@ int main(void)
 {
     int i = 0;
     uint16_t audio[128];
+    float tmp = 15;
+
+    tmp /= 3.413f;
 
     /* Set up system tick */
     RCC_ClocksTypeDef RCC_Clocks;
@@ -55,6 +58,8 @@ int main(void)
     while(1)
     {
       i++;
+      tmp = i;
+      tmp /= 3.01f;
     }
 }
 

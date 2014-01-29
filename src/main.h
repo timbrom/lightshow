@@ -29,6 +29,8 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
+#define RAM_BUFFER_SIZE 1500
+
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
 
