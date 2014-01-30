@@ -10,14 +10,16 @@
 
 GPIO_InitTypeDef  GPIO_InitStructure;
 extern volatile uint32_t Num_Ticks;
+extern __IO uint32_t Audio_Available;
 
 int main(void)
 {
     int i = 0;
     uint16_t audio[128];
-    float tmp = 15;
-
-    tmp /= 3.413f;
+    int16_t max_val = -32768;
+    int16_t min_val = 32767;
+    uint16_t max_val_uns = 0;
+    uint16_t min_val_uns = 65535;
 
     /* Set up system tick */
     RCC_ClocksTypeDef RCC_Clocks;
@@ -40,7 +42,7 @@ int main(void)
     WaveRecorderInit(32000,16, 1);
     WaveRecorderStart(audio, 128);
 
-    while (1)
+    while (0)
     {
         /* Set PA7 */
         GPIOA->BSRRL = GPIO_Pin_7;
@@ -57,9 +59,21 @@ int main(void)
 
     while(1)
     {
-      i++;
-      tmp = i;
-      tmp /= 3.01f;
+      while(Audio_Available == 0);
+
+      for(i = 0; i < 16; i++)
+      {
+          if((int16_t)audio[i] < min_val)
+              min_val = audio[i];
+          if((int16_t)audio[i] > max_val)
+              max_val = audio[i];
+
+          if(audio[i] < min_val_uns)
+              min_val_uns = audio[i];
+          if(audio[i] > max_val_uns)
+              max_val_uns = audio[i];
+      }
+      Audio_Available = 0;
     }
 }
 

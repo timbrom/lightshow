@@ -45,9 +45,6 @@
 
 #define AUDIO_REC_SPI_IRQHANDLER          SPI2_IRQHandler
 
-/* Audio recording frequency in Hz */
-#define REC_FREQ                          8000  
-
 /* PDM buffer input size */
 #define INTERNAL_BUFF_SIZE      64
 
@@ -56,31 +53,15 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-extern __IO uint16_t Time_Rec_Base;
-extern __IO uint8_t Command_index;
-extern __IO uint32_t WaveCounter;
-extern __IO uint8_t LED_Toggle;
-uint16_t RAM_Buf[RAM_BUFFER_SIZE];
-uint16_t RAM_Buf1 [RAM_BUFFER_SIZE];
-uint16_t buf_idx = 0, buf_idx1 =0;
-uint16_t *writebuffer;
-uint16_t counter = 0;
-uint8_t WaveRecStatus = 0;
 /* Current state of the audio recorder interface intialization */
 static uint32_t AudioRecInited = 0;
 PDMFilter_InitStruct Filter;
-/* Audio recording Samples format (from 8 to 16 bits) */
-uint32_t AudioRecBitRes = 16; 
 uint16_t RecBuf[PCM_OUT_SIZE], RecBuf1[PCM_OUT_SIZE];
-uint8_t RecBufHeader[512], Switch = 0;
-__IO uint32_t Data_Status =0;
-/* Audio recording number of channels (1 for Mono or 2 for Stereo) */
-uint32_t AudioRecChnlNbr = 1;
+__IO uint32_t Audio_Available =0;
 /* Main buffer pointer for the recorded data storing */
 uint16_t* pAudioRecBuf;
 /* Current size of the recorded buffer */
 uint32_t AudioRecCurrSize = 0; 
-uint16_t bytesWritten;
 /* Temporary data sample */
 static uint16_t InternalBuffer[INTERNAL_BUFF_SIZE];
 static uint32_t InternalBufferSize = 0;
@@ -131,8 +112,6 @@ uint32_t WaveRecorderInit(uint32_t AudioFreq, uint32_t BitRes, uint32_t ChnlNbr)
     WaveRecorder_SPI_Init(AudioFreq);
     
     /* Set the local parameters */
-    AudioRecBitRes = BitRes;
-    AudioRecChnlNbr = ChnlNbr;
     
     /* Set state of the audio recorder to initialized */
     AudioRecInited = 1;
@@ -222,101 +201,9 @@ void AUDIO_REC_SPI_IRQHANDLER(void)
       volume = 50;
       
       PDM_Filter_64_LSB((uint8_t *)InternalBuffer, (uint16_t *)pAudioRecBuf, volume , (PDMFilter_InitStruct *)&Filter);
-      Data_Status = 1;       
+      Audio_Available = 1;
     }
   }
-}
-
-/**
-  * @brief  Initialize the wave header file
-  * @param  pHeadBuf:Pointer to a buffer
-  * @retval None
-  */
-uint32_t WavaRecorderHeaderInit(uint8_t* pHeadBuf)
-{
-  uint16_t count = 0;
-
-  /* write chunkID, must be 'RIFF'  ------------------------------------------*/
-  pHeadBuf[0] = 'R';
-  pHeadBuf[1] = 'I';
-  pHeadBuf[2] = 'F';
-  pHeadBuf[3] = 'F';
-
-  /* Write the file length */
-  /* The sampling time 8000 Hz
-   To recorde 10s we need 8000 x 10 x 2 (16-Bit data) */
-  pHeadBuf[4] = 0x00;
-  pHeadBuf[5] = 0xE2;
-  pHeadBuf[6] = 0x04;
-  pHeadBuf[7] = 0x00;
-
-  
-  /* Write the file format, must be 'WAVE' */
-  pHeadBuf[8]  = 'W';
-  pHeadBuf[9]  = 'A';
-  pHeadBuf[10] = 'V';
-  pHeadBuf[11] = 'E';
-
-  /* Write the format chunk, must be'fmt ' */
-  pHeadBuf[12]  = 'f';
-  pHeadBuf[13]  = 'm';
-  pHeadBuf[14]  = 't';
-  pHeadBuf[15]  = ' ';
-
-  /* Write the length of the 'fmt' data, must be 0x10 */
-  pHeadBuf[16]  = 0x10;
-  pHeadBuf[17]  = 0x00;
-  pHeadBuf[18]  = 0x00;
-  pHeadBuf[19]  = 0x00;
-
-  /* Write the audio format, must be 0x01 (PCM) */
-  pHeadBuf[20]  = 0x01;
-  pHeadBuf[21]  = 0x00;
-
-  /* Write the number of channels, must be 0x01 (Mono) or 0x02 (Stereo) */
-  pHeadBuf[22]  = 0x02;
-  pHeadBuf[23]  = 0x00;
-
-  /* Write the Sample Rate 8000 Hz */
-  pHeadBuf[24]  = (uint8_t)((REC_FREQ & 0xFF));
-  pHeadBuf[25]  = (uint8_t)((REC_FREQ >> 8) & 0xFF);
-  pHeadBuf[26]  = (uint8_t)((REC_FREQ >> 16) & 0xFF);
-  pHeadBuf[27]  = (uint8_t)((REC_FREQ >> 24) & 0xFF);
-
-  /* Write the Byte Rate */
-  pHeadBuf[28]  = (uint8_t)((REC_FREQ & 0xFF));
-  pHeadBuf[29]  = (uint8_t)((REC_FREQ >> 8) & 0xFF);
-  pHeadBuf[30]  = (uint8_t)((REC_FREQ >> 16) & 0xFF);
-  pHeadBuf[31]  = (uint8_t)((REC_FREQ >> 24) & 0xFF);
-
-  /* Write the block alignment */
-  pHeadBuf[32]  = 0x02;/*0x02*/
-  pHeadBuf[33]  = 0x00;
-
-  /* Write the number of bits per sample */
-  pHeadBuf[34]  = 0x10; /*0x08*/
-  pHeadBuf[35]  = 0x00;
-
-  /* Write the Data chunk, must be 'data' */
-  pHeadBuf[36]  = 'd';
-  pHeadBuf[37]  = 'a';
-  pHeadBuf[38]  = 't';
-  pHeadBuf[39]  = 'a';
-
-  /* Write the number of sample data */
-  pHeadBuf[40] = 0x00;
-  pHeadBuf[41] = 0xE2;
-  pHeadBuf[42] = 0x04;
-  pHeadBuf[43] = 0x00;
-
-  /* Fill the missing bytes in Buffer with 0x80 */
-  for (count = 44; count < 512 ; count ++)
-  {
-    pHeadBuf[count] = 0x80;
-  }
-  
-  /* Return 0 if all operations are OK */
-  return 0;
 }
 
 /**
@@ -330,9 +217,6 @@ void WaveRecorderUpdate(void)
   
   /* Start the record */
   WaveRecorderStart(RecBuf, PCM_OUT_SIZE);
-  
-  /* Reset the time base variable */
-  Switch = 0;
 }
 
 /**
