@@ -37,8 +37,8 @@ int main(void)
 
     /* Initialize peripherals */
     initGPIO();
-    WaveRecorderInit(32000,16, 1);
-    WaveRecorderStart(audio, 128);
+    WaveRecorderInit();
+    WaveRecorderStart(audio, 16);
     serial_init();
 
     /* Begin superloop */

@@ -20,7 +20,6 @@
   */ 
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
 #include "pdm_filter.h"
 #include "microphone.h" 
 
@@ -68,7 +67,7 @@ static uint32_t InternalBufferSize = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 static void WaveRecorder_GPIO_Init(void);
-static void WaveRecorder_SPI_Init(uint32_t Freq);
+static void WaveRecorder_SPI_Init(void);
 static void WaveRecorder_NVIC_Init(void);
 
 /* Private functions ---------------------------------------------------------*/
@@ -80,7 +79,7 @@ static void WaveRecorder_NVIC_Init(void);
   *         ChnlNbr: Number of input microphone channel
   * @retval None
   */
-uint32_t WaveRecorderInit(uint32_t AudioFreq, uint32_t BitRes, uint32_t ChnlNbr)
+uint32_t WaveRecorderInit()
 { 
   /* Check if the interface is already initialized */
   if (AudioRecInited)
@@ -109,7 +108,7 @@ uint32_t WaveRecorderInit(uint32_t AudioFreq, uint32_t BitRes, uint32_t ChnlNbr)
     WaveRecorder_NVIC_Init();
     
     /* Configure the SPI */
-    WaveRecorder_SPI_Init(AudioFreq);
+    WaveRecorder_SPI_Init();
     
     /* Set the local parameters */
     
@@ -241,7 +240,7 @@ static void WaveRecorder_GPIO_Init(void)
   * @param  Freq :Audio frequency
   * @retval None
   */
-static void WaveRecorder_SPI_Init(uint32_t Freq)
+static void WaveRecorder_SPI_Init()
 {
   I2S_InitTypeDef I2S_InitStructure;
 

@@ -25,7 +25,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
-#include "main.h"
 
 
 /* Exported types ------------------------------------------------------------*/
@@ -34,7 +33,7 @@
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 void AUDIO_REC_SPI_IRQHANDLER(void);
-uint32_t WaveRecorderInit(uint32_t AudioFreq, uint32_t BitRes, uint32_t ChnlNbr);
+uint32_t WaveRecorderInit(void);
 uint8_t WaveRecorderStart(uint16_t* pbuf, uint32_t size);
 uint32_t WaveRecorderStop(void);
 void Delay(__IO uint32_t nTime);

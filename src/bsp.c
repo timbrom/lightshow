@@ -31,34 +31,49 @@ void* _sbrk(int incr)
 
 int _write(int file, char *ptr, int len)
 {
+    (void)&file;
+    int num_written = 0;
     while(len > 0)
     {
         __io_putchar(*ptr++);
         len--;
+        num_written++;
     }
+
+    return num_written;
 }
 
 int _close(int file)
 {
+    (void)&file;
     return -1;
 }
 
 int _fstat(int file, struct stat *st)
 {
+    (void)&file;
+    (void)st;
     return 0;
 }
 
 int _isatty(int file)
 {
+    (void)&file;
     return 1;
 }
 
 int _lseek(int file, int ptr, int dir)
 {
+    (void)&file;
+    (void)&ptr;
+    (void)&dir;
     return 0;
 }
 
 int _read(int file, char *ptr, int len)
 {
+    (void)&file;
+    (void)&ptr;
+    (void)&len;
     return 0;
 }
