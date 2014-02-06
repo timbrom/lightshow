@@ -207,19 +207,6 @@ void AUDIO_REC_SPI_IRQHANDLER(void)
 }
 
 /**
-  * @brief  Update the recorded data 
-  * @param  None
-  * @retval None
-  */
-void WaveRecorderUpdate(void)
-{     
-  WaveRecorderInit(32000,16, 1);
-  
-  /* Start the record */
-  WaveRecorderStart(RecBuf, PCM_OUT_SIZE);
-}
-
-/**
   * @brief  Initialize GPIO for wave recorder.
   * @param  None
   * @retval None

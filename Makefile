@@ -2,7 +2,7 @@ CC=arm-none-eabi-gcc
 CFLAGS=-Wall -Wextra -std=c99 -fno-common -O0 -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -DUSE_STDPERIPH_DRIVER -g
 CFLAGS+=-Isrc -Isrc/CMSIS/Include -Isrc/STM32F4xx -Isrc/STM32F4xx_StdPeriph_Driver/inc -Isrc/STM32F4xx_mic
 LD=arm-none-eabi-gcc
-LDFLAGS=-Tlightshow.ld -nostartfiles
+LDFLAGS=-Tlightshow.ld -nostartfiles -Wl,-Map=build/flash.map
 AS=arm-none-eabi-as
 ASFLAGS=-g
 

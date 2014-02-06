@@ -25,7 +25,7 @@ void serial_init(void)
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
     /* UART4 Config */
-    UART_InitStructure.USART_BaudRate = 9600;
+    UART_InitStructure.USART_BaudRate = 115200;
     UART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     UART_InitStructure.USART_StopBits = USART_StopBits_1;
     UART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
