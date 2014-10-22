@@ -181,18 +181,6 @@ void UART4_IRQHandler(void)
     }
 }
 
-void TIM3_IRQHandler(void)
-{
-    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
-    {
-        TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
-        timer_toggleLed();
-        if(timer_callback_handler != NULL)
-        {
-            timer_callback_handler();
-        }
-    }
-}
 /**
   * @}
   */ 

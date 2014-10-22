@@ -10,10 +10,10 @@ void process_menu();
 typedef enum
 {
     MENU_OFF = 0,
+    MENU_ALL_ON,
     MENU_ON,
     MENU_RANDOM,
     MENU_EQ,
-    MENU_ALL_ON,
     MENU_WALKING_ONES,
     MENU_WALKING_ZEROS,
     MENU_NUM_ITEMS,

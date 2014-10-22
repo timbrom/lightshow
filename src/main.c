@@ -38,7 +38,6 @@ int main(void)
     serial_init();
     timer_init();
     display_menu();
-    timer_callback_handler = NULL;
 
     /* Begin superloop */
     while(1)

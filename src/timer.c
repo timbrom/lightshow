@@ -41,12 +41,14 @@ void timer_init(void)
 
     TIM_TimeBaseInit(TIM3, &TIM_InitStructure);
 
+    timer_callback_handler = NULL;
 }
 
-void timer_startInterval(uint16_t period_ms)
+void timer_startInterval(void (*p_timer_callback_handler)(void), uint16_t period_ms)
 {
     TIM_SetAutoreload(TIM3, period_ms);
     TIM_SetCounter(TIM3, 0);
+    timer_callback_handler = *p_timer_callback_handler;
 
     TIM_Cmd(TIM3, ENABLE);
 
@@ -58,8 +60,11 @@ void timer_stopInterval()
 {
     TIM_Cmd(TIM3, DISABLE);
 
-    /* DIsable the overflow interrupt */
+    /* Disable the overflow interrupt */
     TIM_ITConfig(TIM3, TIM_IT_Update, DISABLE);
+
+    /* Disable the callback */
+    timer_callback_handler = NULL;
 }
 
 void timer_toggleLed()
@@ -76,5 +81,18 @@ void timer_toggleLed()
     }
 
     turned_on = !turned_on;
+}
+
+void TIM3_IRQHandler(void)
+{
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+    {
+        TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+        timer_toggleLed();
+        if(timer_callback_handler != NULL)
+        {
+            timer_callback_handler();
+        }
+    }
 }
 

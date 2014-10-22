@@ -9,11 +9,11 @@
 #include "microphone.h"
 
 char* Menu_Commands_Text[MENU_NUM_ITEMS] = {
-    "Turn all off",
-    "Turn on (mask)",
-    "Random (0 - steady, 1 - change on beat)",
-    "Equalizer",
+    "Turn all outputs off",
     "Turn all outputs on",
+    "Turn on (mask)",
+    "Random (0 - steady, 1 - change on beat, 2 - set interval)",
+    "Equalizer",
     "Walking Ones",
     "Walking Zeros",
 };
@@ -27,7 +27,7 @@ static void turnOnNum(uint8_t num);
 static void turnOnMask(uint16_t mask);
 static void walking_ones(void);
 static void walking_zeros(void);
-extern volatile uint32_t Num_Ticks;
+static void random_interval(void);
 
 void display_menu()
 {
@@ -65,13 +65,15 @@ static void handle_command()
     char *endptr;
     long int command_num = strtol(command, &endptr, 0);
     sample_collected_fp = NULL; /* Stop collecting samples */
-    timer_callback_handler = NULL;
     timer_stopInterval();
 
     switch(command_num)
     {
         case MENU_OFF:
             turnOnNum(0);
+            break;
+        case MENU_ALL_ON:
+            turnOnMask(0xFFFF);
             break;
         case MENU_ON:
             /* Get the turn on mask */
@@ -82,7 +84,8 @@ static void handle_command()
             }
         case MENU_RANDOM:
             {
-                long int submenu = strtol(endptr, NULL, 0);
+                char *endptr2;
+                long int submenu = strtol(endptr, &endptr2, 0);
 
                 if(submenu == 0)
                 {
@@ -93,6 +96,13 @@ static void handle_command()
                 {
                     sample_collected_fp = random;
                 }
+                else if(submenu == 2)
+                {
+                    long int mask = strtol(endptr2, NULL, 0);
+                    if(mask == 0) /* Default to 1 second */
+                        mask = 1000;
+                    timer_startInterval(random_interval, (mask * 2) - 1);
+                }
                 else
                 {
                     printf("Invalid submenu");
@@ -102,17 +112,13 @@ static void handle_command()
         case MENU_EQ:
             sample_collected_fp = equalizer;
             break;
-        case MENU_ALL_ON:
-            turnOnMask(0xFFFF);
-            break;
         case MENU_WALKING_ONES:
             /* Get the interval */
             {
                 long int mask = strtol(endptr, NULL, 0);
                 if(mask == 0) /* Default to 1 second */
                     mask = 1000;
-                timer_callback_handler = walking_ones;
-                timer_startInterval((mask * 2) - 1);
+                timer_startInterval(walking_ones, (mask * 2) - 1);
             }
             break;
         case MENU_WALKING_ZEROS:
@@ -121,8 +127,7 @@ static void handle_command()
                 long int mask = strtol(endptr, NULL, 0);
                 if(mask == 0) /* Default to 1 second */
                     mask = 1000;
-                timer_callback_handler = walking_zeros;
-                timer_startInterval((mask * 2) - 1);
+                timer_startInterval(walking_zeros, (mask * 2) - 1);
             }
             break;
         default:
@@ -323,5 +328,14 @@ static void walking_zeros()
     {
         mask = 0xFE;
     }
+}
+
+/**
+ * Turns on a random set of lights
+ */
+static void random_interval(void)
+{
+    uint32_t randnum = RNG_GetRandomNumber();
+    turnOnMask((uint16_t)(randnum & 0xFFFF));
 }
 

@@ -4,10 +4,8 @@
 #include "stm32f4xx.h"
 #include <stdint.h>
 
-extern void (*timer_callback_handler)(void);
-
 void timer_init(void);
-void timer_startInterval(uint16_t period_ms);
+void timer_startInterval(void (*p_timer_callback_handler)(void), uint16_t period_ms);
 void timer_stopInterval(void);
 void timer_toggleLed(void);
 
