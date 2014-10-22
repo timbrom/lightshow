@@ -29,6 +29,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_it.h"
+#include "serial.h"
+#include "timer.h"
+#include <stdlib.h>
 
 /** @addtogroup STM32F4xx_StdPeriph_Examples
   * @{
@@ -39,9 +42,11 @@
   */
 
 volatile uint32_t Num_Ticks = 0U;
+extern void (*one_second_fp)();
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -157,14 +162,37 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
-  * @brief  This function handles PPP interrupt request.
+  * @brief  This function handles USARTx global interrupt request.
   * @param  None
   * @retval None
   */
-/*void PPP_IRQHandler(void)
+void UART4_IRQHandler(void)
 {
-}*/
+    if(USART_GetITStatus(UART4, USART_IT_RXNE) != RESET)
+    {
+        /* Read one byte from the receive data register */
+        Rx_Buffer[Rx_Counter++] = (USART_ReceiveData(UART4) & 0x7F);
 
+        if(Rx_Counter == RXBUFFERSIZE)
+        {
+            /* Disable the UART 4 Receive interrupt */
+            USART_ITConfig(UART4, USART_IT_RXNE, DISABLE);
+        }
+    }
+}
+
+void TIM3_IRQHandler(void)
+{
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+    {
+        TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+        timer_toggleLed();
+        if(timer_callback_handler != NULL)
+        {
+            timer_callback_handler();
+        }
+    }
+}
 /**
   * @}
   */ 

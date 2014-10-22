@@ -1,6 +1,7 @@
 /* Functions needed for newlib */
 
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -72,8 +73,33 @@ int _lseek(int file, int ptr, int dir)
 
 int _read(int file, char *ptr, int len)
 {
+    int bytes_read = 0;
+    /* Disable the UART interrupt */
+    USART_ITConfig(UART4, USART_IT_RXNE, DISABLE);
+    
+    /* Handle the case where we are reading fewer bytes than we have received */
+    if(Rx_Counter > len)
+    {
+        bytes_read = len;
+        memcpy(ptr, Rx_Buffer, len);
+
+        for(int i = len; i < Rx_Counter; i++)
+        {
+            Rx_Buffer[i - len] = Rx_Buffer[i];
+        }
+
+        Rx_Counter -= len;
+    }
+    /* We are reading all of the bytes in the Rx_Buffer */
+    else
+    {
+        bytes_read = Rx_Counter;
+        memcpy(ptr, Rx_Buffer, Rx_Counter);
+        Rx_Counter = 0;
+    }
+
+    /* Enable the UART interrupt */
+    USART_ITConfig(UART4, USART_IT_RXNE, ENABLE);
     (void)&file;
-    (void)&ptr;
-    (void)&len;
-    return 0;
+    return bytes_read;
 }

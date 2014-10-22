@@ -12,8 +12,8 @@ SRCS=src
 
 PERIPH_ODIR=STM32F4xx_StdPeriph_Driver
 
-_OBJS=startup_stm32f40_41xxx.o main.o system_stm32f4xx.o microphone.o stm32f4xx_it.o serial.o bsp.o
-_PERIPH_OBJS=stm32f4xx_gpio.o stm32f4xx_rcc.o stm32f4xx_spi.o misc.o stm32f4xx_usart.o
+_OBJS=startup_stm32f40_41xxx.o main.o system_stm32f4xx.o microphone.o stm32f4xx_it.o serial.o bsp.o menu.o timer.o
+_PERIPH_OBJS=stm32f4xx_gpio.o stm32f4xx_rcc.o stm32f4xx_spi.o misc.o stm32f4xx_usart.o stm32f4xx_rng.o stm32f4xx_tim.o
 
 PERIPH_OBJS = $(patsubst %,$(PERIPH_ODIR)/%,$(_PERIPH_OBJS))
 _OBJS += $(PERIPH_OBJS)

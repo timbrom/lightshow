@@ -6,18 +6,21 @@
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_conf.h"
+#include "stm32f4xx_rng.h"
 #include "microphone.h"
 #include "serial.h"
+#include "menu.h"
+#include "timer.h"
 #include <stdlib.h>
 #include <stdio.h>
 
-#define NUM_SAMPLES 50
+#define NUM_SAMPLES 30
 
 extern volatile uint32_t Num_Ticks;
 extern __IO uint32_t Audio_Available;
+void (*sample_collected_fp)(int16_t max, int16_t min, int32_t last_average);
 
 void initGPIO(void);
-void turnOnNum(uint8_t num);
 
 int main(void)
 {
@@ -26,105 +29,86 @@ int main(void)
     int16_t audio_avg[NUM_SAMPLES]; // Average of each of the last NUM_SAMPLES frames
     int16_t audio_avg_num = 0; // Number of averages in the audio avg buffer
     int16_t max = 0xFFFE;
+    uint32_t max_time = 0;
     int16_t min = 0x7FFE;
+    uint32_t min_time = 0;
 
     /* Set up system tick */
     RCC_ClocksTypeDef RCC_Clocks;
   
-    /* SysTick end of count event each 10ms */
+    /* SysTick end of count event each 1ms */
     RCC_GetClocksFreq(&RCC_Clocks);
-    SysTick_Config(RCC_Clocks.HCLK_Frequency / 100);
+    SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
 
     /* Initialize peripherals */
     initGPIO();
     WaveRecorderInit();
     WaveRecorderStart(audio, 16);
+    RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_RNG, ENABLE);
+    RNG_Cmd(ENABLE);
     serial_init();
+    timer_init();
+    display_menu();
+    sample_collected_fp = NULL;
+    timer_callback_handler = NULL;
 
     /* Begin superloop */
     while(1)
     {
         int32_t sum = 0;
+
+        /* Wait for audio to become available (16 samples) */
         while(Audio_Available == 0);
 
+        /* Sum the 16 samples collected */
         for(i = 0; i < 16; i++)
         {
             sum += (int16_t)audio[i];
         }
 
+        /* Collect the average of these 16 samples */
         audio_avg[audio_avg_num] = sum /= 16;
         Audio_Available = 0;
 
         audio_avg_num++;
 
+        /* Once we have NUM_SAMPLES averages */
         if(audio_avg_num >= NUM_SAMPLES)
         {
             int32_t last_average = 0;
 
-            max -= 10;
-            min += 10;
+            /* Decay max and min if too much time has elapsed */
+            if(Num_Ticks > max_time + 10000)
+                max -= 50;
+            if(Num_Ticks > min_time + 10000)
+                min += 50;
             audio_avg_num = 0;
 
+            /* Compute the average of the last NUM_SAMPLES averages (average of average) */
             for(i = 0; i < NUM_SAMPLES; i++)
             {
                 last_average += (int32_t)audio_avg[i];
             }
             last_average /= NUM_SAMPLES;
 
+            /* Track max and min. The first samples come back as MIN_S16, so handle that case */
             if(last_average > max)
             {
                 max = last_average;
+                max_time = Num_Ticks;
             }
             if(last_average < min || min < -32000)
             {
                 min = last_average;
+                min_time = Num_Ticks;
             }
 
-            int16_t step = (max - min) / 8;
-            int8_t num_on = (last_average - min) / step;
+            if(sample_collected_fp != NULL)
+                sample_collected_fp(max, min, last_average);
 
-            printf("Max: %d Min: %d Step: %d Num: %d\r\n", max, min, step, num_on);
-            turnOnNum(num_on);
+            process_menu();
         }
     }
-}
-
-/**
- * Turns on first N outlets
- *
- * @param[in] num Number to turn on
- */
-void turnOnNum(uint8_t num)
-{
-    uint16_t reg_val = 0x0000;
-    switch(num)
-    {
-    case 8:
-        reg_val |= GPIO_Pin_7;
-    case 7:
-        reg_val |= GPIO_Pin_6;
-    case 6:
-        reg_val |= GPIO_Pin_5;
-    case 5:
-        reg_val |= GPIO_Pin_4;
-    case 4:
-        reg_val |= GPIO_Pin_3;
-    case 3:
-        reg_val |= GPIO_Pin_2;
-    case 2:
-        reg_val |= GPIO_Pin_1;
-    case 1:
-        reg_val |= GPIO_Pin_0;
-        break;
-    case 0:
-        reg_val = 0;
-        break;
-    default:
-        reg_val = 0xFFFF;
-    }
-
-    GPIOE->BSRRL = reg_val;
-    GPIOE->BSRRH = ~reg_val;
 }
 
 void initGPIO(void)

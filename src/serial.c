@@ -1,14 +1,29 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
+#include "misc.h"
+#include <stdio.h>
+#include <unistd.h>
+#include "serial.h"
+
+uint8_t Rx_Buffer[RXBUFFERSIZE];
+__IO uint16_t Rx_Counter = 0;
 
 /* Sets up a serial channel an PA0 and PA1 */
 void serial_init(void)
 {
     GPIO_InitTypeDef  GPIO_InitStructure;
     USART_InitTypeDef UART_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
 
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+
+    /* Set up the interrupt */
+    NVIC_InitStructure.NVIC_IRQChannel = UART4_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
 
     /* Enable UART clock */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART4, ENABLE);
@@ -35,6 +50,9 @@ void serial_init(void)
     USART_Init(UART4, &UART_InitStructure);
 
     USART_Cmd(UART4, ENABLE);
+
+    /* Enable the RX interrupt */
+    USART_ITConfig(UART4, USART_IT_RXNE, ENABLE);
 }
 
 int __io_putchar(int ch)
@@ -48,4 +66,5 @@ int __io_putchar(int ch)
 
     return ch;
 }
+
 
