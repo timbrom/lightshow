@@ -35,7 +35,7 @@ void timer_init(void)
 
     /* Set up the TIM3 peripheral */
     TIM_InitStructure.TIM_ClockDivision = TIM_CKD_DIV4;
-    TIM_InitStructure.TIM_Prescaler = 42000; /* APB1 clock is at 42 MHz. Count every millisecond */
+    TIM_InitStructure.TIM_Prescaler = 41999; /* APB1 clock is at 42 MHz, and this timer counts at twice that speed. Count every 1/2 millisecond. Note: The prescale value used is the register value + 1 */
     TIM_InitStructure.TIM_CounterMode = TIM_CounterMode_Up;
     TIM_InitStructure.TIM_Period = 1000; /* Start with one second */
 

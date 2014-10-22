@@ -112,7 +112,7 @@ static void handle_command()
                 if(mask == 0) /* Default to 1 second */
                     mask = 1000;
                 timer_callback_handler = walking_ones;
-                timer_startInterval(mask * 2);
+                timer_startInterval((mask * 2) - 1);
             }
             break;
         case MENU_WALKING_ZEROS:
@@ -122,7 +122,7 @@ static void handle_command()
                 if(mask == 0) /* Default to 1 second */
                     mask = 1000;
                 timer_callback_handler = walking_zeros;
-                timer_startInterval(mask * 2);
+                timer_startInterval((mask * 2) - 1);
             }
             break;
         default:
