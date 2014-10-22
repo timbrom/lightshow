@@ -22,6 +22,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "pdm_filter.h"
 #include "microphone.h" 
+#include <stdio.h>
 
 /** @addtogroup STM32F4-Discovery_Audio_Player_Recorder
 * @{
@@ -42,8 +43,6 @@
 #define SPI_MOSI_SOURCE                   GPIO_PinSource3
 #define SPI_MOSI_AF                       GPIO_AF_SPI2
 
-#define AUDIO_REC_SPI_IRQHANDLER          SPI2_IRQHandler
-
 /* PDM buffer input size */
 #define INTERNAL_BUFF_SIZE      64
 
@@ -55,12 +54,8 @@
 /* Current state of the audio recorder interface intialization */
 static uint32_t AudioRecInited = 0;
 PDMFilter_InitStruct Filter;
-uint16_t RecBuf[PCM_OUT_SIZE], RecBuf1[PCM_OUT_SIZE];
-__IO uint32_t Audio_Available =0;
 /* Main buffer pointer for the recorded data storing */
 uint16_t* pAudioRecBuf;
-/* Current size of the recorded buffer */
-uint32_t AudioRecCurrSize = 0; 
 /* Temporary data sample */
 static uint16_t InternalBuffer[INTERNAL_BUFF_SIZE];
 static uint32_t InternalBufferSize = 0;
@@ -69,6 +64,7 @@ static uint32_t InternalBufferSize = 0;
 static void WaveRecorder_GPIO_Init(void);
 static void WaveRecorder_SPI_Init(void);
 static void WaveRecorder_NVIC_Init(void);
+void (*sample_collected_fp)(int16_t * p_data);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -89,6 +85,8 @@ uint32_t WaveRecorderInit()
   }
   else
   {
+    sample_collected_fp = NULL;
+
     /* Enable CRC module */
     RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;
     
@@ -123,17 +121,15 @@ uint32_t WaveRecorderInit()
 /**
   * @brief  Start audio recording
   * @param  pbuf: pointer to a buffer
-  *         size: Buffer size
   * @retval None
   */
-uint8_t WaveRecorderStart(uint16_t* pbuf, uint32_t size)
+uint8_t WaveRecorderStart(uint16_t* pbuf)
 {
 /* Check if the interface has already been initialized */
   if (AudioRecInited)
   {
     /* Store the location and size of the audio buffer */
     pAudioRecBuf = pbuf;
-    AudioRecCurrSize = size;
     
     /* Enable the Rx buffer not empty interrupt */
     SPI_I2S_ITConfig(SPI2, SPI_I2S_IT_RXNE, ENABLE);
@@ -181,7 +177,7 @@ uint32_t WaveRecorderStop(void)
   * @retval None
 */
 
-void AUDIO_REC_SPI_IRQHANDLER(void)
+void SPI2_IRQHandler(void)
 {  
    u16 volume;
    u16 app;
@@ -200,7 +196,9 @@ void AUDIO_REC_SPI_IRQHANDLER(void)
       volume = 50;
       
       PDM_Filter_64_LSB((uint8_t *)InternalBuffer, (uint16_t *)pAudioRecBuf, volume , (PDMFilter_InitStruct *)&Filter);
-      Audio_Available = 1;
+
+      if(sample_collected_fp != NULL)
+          sample_collected_fp((int16_t*)pAudioRecBuf);
     }
   }
 }

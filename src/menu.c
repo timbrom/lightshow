@@ -6,6 +6,7 @@
 #include "serial.h"
 #include "menu.h"
 #include "timer.h"
+#include "microphone.h"
 
 char* Menu_Commands_Text[MENU_NUM_ITEMS] = {
     "Turn all off",
@@ -19,14 +20,14 @@ char* Menu_Commands_Text[MENU_NUM_ITEMS] = {
 
 char command[RXBUFFERSIZE + 1];
 uint8_t command_len = 0;
-extern void (*sample_collected_fp)(int16_t max, int16_t min, int32_t last_average);
 static void handle_command();
-static void equalizer(int16_t max, int16_t min, int32_t last_average);
-static void random(int16_t max, int16_t min, int32_t last_average);
+static void equalizer(int16_t *data);
+static void random(int16_t *data);
 static void turnOnNum(uint8_t num);
 static void turnOnMask(uint16_t mask);
 static void walking_ones(void);
 static void walking_zeros(void);
+extern volatile uint32_t Num_Ticks;
 
 void display_menu()
 {
@@ -131,39 +132,102 @@ static void handle_command()
     }
 }
 
-static void equalizer(int16_t max, int16_t min, int32_t last_average)
+static void equalizer(int16_t *data)
 {
-    int16_t step = (max - min) / 8;
-    int8_t num_on = (last_average - min) / step;
+    const uint16_t num_instant_energy_samples = 1600;
+    const uint16_t num_historic_energy_samples = 50;
 
-    turnOnNum(num_on);
+    static double historic_energy_samples[50];
+    static int8_t historic_energy_sample_idx = 0;
+    static double instant_energy_avg = 0;
+    static int16_t instant_energy_avg_cnt = 0;
+
+    /* Keep a running sum of each sample. */
+    for(int i = 0; i < 16; i++)
+        instant_energy_avg += data[i] * data[i];
+    instant_energy_avg_cnt += 16;
+
+    if(instant_energy_avg_cnt == num_instant_energy_samples) // We have 800 samples (1/20th of a second)
+    {
+        /* Find current min and max */
+        double min = historic_energy_samples[0];
+        double max = historic_energy_samples[0];
+        for(int i = 1; i < num_historic_energy_samples; i++)
+        {
+            if(historic_energy_samples[i] < min)
+                min = historic_energy_samples[i];
+            else if(historic_energy_samples[i] > max)
+                max = historic_energy_samples[i];
+        }
+        historic_energy_samples[historic_energy_sample_idx++] = instant_energy_avg;
+        if(historic_energy_sample_idx >= num_historic_energy_samples)
+            historic_energy_sample_idx = 0;
+
+        double step = (max - min) / 8;
+        uint16_t turn_on = (uint16_t)((instant_energy_avg - min) / step) + 0.5;
+        turnOnNum(turn_on);
+
+        instant_energy_avg = 0;
+        instant_energy_avg_cnt = 0;
+    }
 }
 
-static void random(int16_t max, int16_t min, int32_t last_average)
+/* Algorithm comes from http://archive.gamedev.net/archive/reference/programming/features/beatdetection/index.html */
+static void random(int16_t *data)
 {
-    static bool armed = true;
-    (void)min;
+    const uint16_t num_instant_energy_samples = 800;
+    const uint16_t num_historic_energy_samples = 20;
 
-    printf("Max: %d Min: %d Last Average: %d\r\n", max, min, last_average);
+    static double historic_energy_samples[20];
+    static int8_t historic_energy_sample_idx = 0;
+    static double instant_energy_avg = 0;
+    static int16_t instant_energy_avg_cnt = 0;
 
-    /* If I'm armed, when the last average is loud (start of a beat) then 
-     * change the outputs and disarm. */
-    if(armed)
+    /* Keep a running sum of each sample. */
+    for(int i = 0; i < 16; i++)
+        instant_energy_avg += data[i] * data[i];
+    instant_energy_avg_cnt += 16;
+
+    if(instant_energy_avg_cnt == num_instant_energy_samples) // We have 800 samples (1/20th of a second)
     {
-        if(last_average > ((3 * max) / 4))
+        double avg = 0;
+        double var = 0;
+        double C = 0;
+
+        /* Compute the average */
+        for(int i = 0; i < num_historic_energy_samples; i++)
+        {
+            avg += historic_energy_samples[i];
+        }
+        avg /= num_historic_energy_samples;
+
+        /* Compute the variance */
+        for(int i = 0; i < num_historic_energy_samples; i++)
+        {
+            double tmp = (historic_energy_samples[i] - avg);
+            var += tmp * tmp;
+        }
+        var /= num_historic_energy_samples;
+
+        /* Compute the constant C */
+        C = 1.3;
+
+        /* Store off this local average */
+        historic_energy_samples[historic_energy_sample_idx++] = instant_energy_avg;
+        if(historic_energy_sample_idx >= num_historic_energy_samples)
+        {
+            historic_energy_sample_idx = 0;
+        }
+
+        /* See if we have a beat */
+        if(instant_energy_avg > (C * avg))
         {
             uint32_t randnum = RNG_GetRandomNumber();
             turnOnMask((uint16_t)(randnum & 0xFFFF));
-            armed = false;
         }
-    }
-    /* If unarmed, re-arm when things are quiet */
-    else
-    {
-        if(last_average < (max / 2))
-        {
-            armed = true;
-        }
+//printf("Inst: %lf, Avg: %lf, Var: %lf, C: %lf, C*avg: %lf\r\n", instant_energy_avg, avg, var, C, C*avg);
+        instant_energy_avg_cnt = 0;
+        instant_energy_avg = 0;        
     }
 }
 

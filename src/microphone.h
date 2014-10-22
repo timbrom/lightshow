@@ -34,10 +34,12 @@
 /* Exported functions ------------------------------------------------------- */
 void AUDIO_REC_SPI_IRQHANDLER(void);
 uint32_t WaveRecorderInit(void);
-uint8_t WaveRecorderStart(uint16_t* pbuf, uint32_t size);
+uint8_t WaveRecorderStart(uint16_t* pbuf);
 uint32_t WaveRecorderStop(void);
 void Delay(__IO uint32_t nTime);
 void WaveRecorderUpdate(void);
+extern void (*sample_collected_fp)(int16_t * p_data);
+
 
 #endif /* __WAVE_RECORDER_H */
 
