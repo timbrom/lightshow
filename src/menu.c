@@ -141,6 +141,7 @@ static void equalizer(int16_t *data)
     static int8_t historic_energy_sample_idx = 0;
     static double instant_energy_avg = 0;
     static int16_t instant_energy_avg_cnt = 0;
+    static uint16_t num_on = 0;
 
     /* Keep a running sum of each sample. */
     for(int i = 0; i < 16; i++)
@@ -165,7 +166,17 @@ static void equalizer(int16_t *data)
 
         double step = (max - min) / 8;
         uint16_t turn_on = (uint16_t)((instant_energy_avg - min) / step) + 0.5;
-        turnOnNum(turn_on);
+
+        /* If it is louder than before, set to the proper value */
+        if(turn_on >= num_on)
+        {
+            num_on = turn_on;
+            turnOnNum(num_on);
+        }
+        else /* Decrement just by one if quieter */
+        {
+            turnOnNum(--num_on);
+        }
 
         instant_energy_avg = 0;
         instant_energy_avg_cnt = 0;
